@@ -1,12 +1,14 @@
-require("dotenv").config();
+require("dotenv").config({ path: __dirname + "/.env" });
 const Mustache = require("mustache");
 const fs = require("fs");
 const { Octokit } = require("@octokit/rest");
+const { Console } = require("console");
+const commitCount = require('git-commit-count');
 
 const octokit = new Octokit({
   auth: process.env.GH_ACCESS_TOKEN,
   userAgent: "readme v1.0.0",
-  baseUrl: "https://api.github.com",
+  baseUrl: process.env.GH_BASE_URL,
   log: {
     warn: console.warn,
     error: console.error,
@@ -31,72 +33,13 @@ function calculateTotalStars(data) {
   return totalStars;
 }
 
-async function calculateTotalCommits(data, cutoffDate) {
-  const contributorsRequests = [];
-  const githubUsername = process.env.GH_USERNAME;
-
-  data.forEach((repo) => {
-    const options = {
-      owner: githubUsername,
-      repo: repo.name,
-    };
-
-    const lastRepoUpdate = new Date(repo.updated_at);
-
-    if (!cutoffDate || lastRepoUpdate > cutoffDate) {
-      // https://docs.github.com/en/rest/reference/repos#get-all-contributor-commit-activity
-      const repoStats = octokit.rest.repos.getContributorsStats(options);
-
-      contributorsRequests.push(repoStats);
-    }
-  });
-
-  const totalCommits = await getTotalCommits(
-    contributorsRequests,
-    githubUsername,
-    cutoffDate
-  );
-
-  return totalCommits;
-}
-
-async function getTotalCommits(requests, contributor, cutoffDate) {
-  const repos = await Promise.all(requests);
+async function calculateTotalCommits(data) {
   let totalCommits = 0;
-
-  repos.forEach((repo) => {
-    const contributorName = (item) => item.author.login === contributor;
-    const indexOfContributor = repo.data.findIndex(contributorName);
-
-    if (indexOfContributor !== -1) {
-      const contributorStats = repo.data[indexOfContributor];
-      totalCommits += !cutoffDate
-        ? computeCommitsFromStart(contributorStats)
-        : computeCommitsBeforeCutoff(contributorStats, cutoffDate);
-    }
+  data.forEach((repo) => { 
+    totalCommits += commitCount(repo.name)
   });
 
   return totalCommits;
-}
-
-function computeCommitsFromStart(contributorData) {
-  return contributorData.total;
-}
-
-function computeCommitsBeforeCutoff(contributorData, cutoffDate) {
-  const olderThanCutoffDate = (week) => {
-    // week.w -> Start of the week, given as a Unix timestamp (which is in seconds)
-    const MILLISECONDS_IN_A_SECOND = 1000;
-    const milliseconds = week.w * MILLISECONDS_IN_A_SECOND;
-    const startOfWeek = new Date(milliseconds);
-    return startOfWeek > cutoffDate;
-  };
-
-  const newestWeeks = contributorData.weeks.filter(olderThanCutoffDate);
-  // week.c -> Number of commits in a week
-  const total = newestWeeks.reduce((sum, week) => sum + week.c, 0);
-
-  return total;
 }
 
 async function updateReadme(userData) {
@@ -116,17 +59,13 @@ async function main() {
 
   const totalStars = calculateTotalStars(repoData);
 
-  const lastYear = new Date();
-  lastYear.setFullYear(lastYear.getFullYear() - 1);
-
-  const totalCommitsInPastYear = await calculateTotalCommits(
-    repoData,
-    lastYear
+  const totalCommits = await calculateTotalCommits(
+    repoData
   );
 
   // Hex color codes for the color blocks
   const colors = ["1c4e65", "5c949c", "e2dedd", "dfa4a3", "7c5c60"];
-  await updateReadme({ totalStars, totalCommitsInPastYear, colors });
+  await updateReadme({ totalStars, totalCommits, colors });
 }
 
 main();

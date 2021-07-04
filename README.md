@@ -17,8 +17,8 @@ Languages: Assembly, C, Haskell, SQL
 Learning: Node.js, CPP, Cybersecurity,
           Kotlin, Scala
 Hobbies: Drawing, Anime, Gaming
-Commits: 0
-Stars: 0
+Commits: 44
+Stars: 7
 Discord: Kazuki Nagasa#4066
 ```
 <p align="left">
