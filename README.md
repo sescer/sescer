@@ -5,10 +5,10 @@
 <table>
 <tr>
 <td style="width:30%">
-<img src="Image.png" width="400" />
+<img src="static/Image.png" width="400" />
 <img width="400" src="https://github-readme-stats.vercel.app/api/top-langs/?username=sescer&show_icons=true&theme=moltack&layout=compact"/>
 <p align="left">
-  <img alt="#200c0e" src="https://via.placeholder.com/15/200c0e/000000?text=+" width="45" height="40" /><img alt="#513308" src="https://via.placeholder.com/15/513308/000000?text=+" width="45" height="40" /><img alt="#9b7c15" src="https://via.placeholder.com/15/9b7c15/000000?text=+" width="45" height="40" /><img alt="#f9d2ba" src="https://via.placeholder.com/15/f9d2ba/000000?text=+" width="45" height="40" /><img alt="#fbf4ec" src="https://via.placeholder.com/15/fbf4ec/000000?text=+" width="45" height="40" />
+  <img alt="#200c0e" src="static/200c0e.png" width="45" height="40" /><img alt="#513308" src="static/513308.png" width="45" height="40" /><img alt="#9b7c15" src="static/9b7c15.png" width="45" height="40" /><img alt="#f9d2ba" src="static/f9d2ba.png" width="45" height="40" /><img alt="#fbf4ec" src="static/fbf4ec.png" width="45" height="40" />
 </p>
 
 <a href="https://t.me/boryapatrushev">
