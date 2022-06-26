@@ -4,6 +4,7 @@ const fs = require("fs");
 const { Octokit } = require("@octokit/rest");
 const { Console } = require("console");
 const commitCount = require('git-commit-count');
+const puppeteer = require('puppeteer')
 
 const octokit = new Octokit({
   auth: process.env.GH_ACCESS_TOKEN,
@@ -54,6 +55,23 @@ async function updateReadme(userData) {
   });
 }
 
+async function scrapeCTFTIME(url) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.goto(url);
+
+  const [el] = await page.$x('//*[@id="rating_2022"]/p[1]/b[1]');
+  const src = await el.getProperty('textContent');
+  const ratingPlace = (await src.jsonValue()).trim();
+
+  const [el2] = await page.$x('//*[@id="rating_2022"]/p[2]/b/a');
+  const src2 = await el2.getProperty('textContent');
+  const countryPlace = await src2.jsonValue();
+
+  browser.close();
+  return [ratingPlace, countryPlace]
+}
+
 async function main() {
   const repoData = await grabDataFromAllRepositories();
 
@@ -63,9 +81,11 @@ async function main() {
     repoData
   );
 
+  const [ratingPlace, countryPlace] = await scrapeCTFTIME("https://ctftime.org/team/170324");
+
   // Hex color codes for the color blocks
-  const colors = ["1c4e65", "5c949c", "e2dedd", "dfa4a3", "7c5c60"];
-  await updateReadme({ totalStars, totalCommits, colors });
+  const colors = ["200c0e", "513308", "9b7c15", "f9d2ba", "fbf4ec"];
+  await updateReadme({ totalStars, totalCommits, ratingPlace, countryPlace, colors });
 }
 
 main();
