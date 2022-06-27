@@ -9,7 +9,6 @@ const puppeteer = require('puppeteer')
 const octokit = new Octokit({
   auth: process.env.GH_ACCESS_TOKEN,
   userAgent: "readme v1.0.0",
-  baseUrl: process.env.GH_BASE_URL,
   log: {
     warn: console.warn,
     error: console.error,
