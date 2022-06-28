@@ -64,7 +64,7 @@
   |          🏳	CTF INFO              |
   =====================================
   CTF_Team: Nyanya catgirls uwu
-  Overall_rating_place: 617
+  Overall_rating_place: 630
   Rating_place_in_Russia: 28
   CTFs: YetiCTF 22 - I place,
         VKA CTF 22 - I place,
@@ -75,7 +75,7 @@
   =====================================
   |          🐱 GitHub Stats          |
   =====================================
-  Commits: 184
+  Commits: 48
   Stars: 39
   ```
 
