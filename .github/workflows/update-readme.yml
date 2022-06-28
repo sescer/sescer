@@ -14,10 +14,10 @@ jobs:
       # Checkout project source code
       - uses: actions/checkout@v2
 
-      - name: Use NodeJs 14.x
+      - name: Use NodeJs 18.1
         uses: actions/setup-node@v1
         with:
-          node-version: "14.x"
+          node-version: "18.1"
 
       - name: Cache npm dependencies
         uses: actions/cache@v2
@@ -34,7 +34,6 @@ jobs:
         run: npm start
         env:
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-          GH_USERNAME: ${{ secrets.GH_USERNAME }}
 
       - name: Commit and Push new README.md to the repository
         uses: mikeal/publish-to-github-action@master
