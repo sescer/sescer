@@ -64,7 +64,7 @@
   |          🏳	CTF INFO              |
   =====================================
   CTF_Team: Nyanya catgirls uwu
-  Overall_rating_place: 413
+  Overall_rating_place: 415
   Rating_place_in_Russia: 30
   CTFs: YetiCTF 22 - I place,
         VKA CTF 22 - I place,
