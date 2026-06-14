@@ -1,10 +1,10 @@
 require("dotenv").config({ path: __dirname + "/.env" });
 const Mustache = require("mustache");
-const fs = require("fs");
+const fs = require("fs/promises");
 const { Octokit } = require("@octokit/rest");
-const { Console } = require("console");
-const commitCount = require('git-commit-count');
-const puppeteer = require('puppeteer')
+
+const CTF_TEAM_ID = 170324;
+const COLORS = ["200c0e", "513308", "9b7c15", "f9d2ba", "fbf4ec"];
 
 const octokit = new Octokit({
   auth: process.env.GH_ACCESS_TOKEN,
@@ -16,75 +16,115 @@ const octokit = new Octokit({
 });
 
 async function grabDataFromAllRepositories() {
-  // Options under "List repositories for the authenticated user"
-  // https://octokit.github.io/rest.js/v18#authentication
-  const options = {
-    per_page: 100,
-  };
+  const repos = [];
+  let page = 1;
 
-  // https://docs.github.com/en/rest/reference/repos#list-repositories-for-the-authenticated-user
-  const request = await octokit.rest.repos.listForAuthenticatedUser(options);
-  return request.data;
+  while (true) {
+    const { data } = await octokit.rest.repos.listForAuthenticatedUser({
+      per_page: 100,
+      page,
+    });
+
+    repos.push(...data);
+
+    if (data.length < 100) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return repos;
 }
 
-function calculateTotalStars(data) {
-  const stars = data.map((repo) => repo.stargazers_count);
-  const totalStars = stars.reduce((sum, curr) => sum + curr, 0);
-  return totalStars;
+function calculateTotalStars(repos) {
+  return repos.reduce((sum, repo) => sum + repo.stargazers_count, 0);
 }
 
-async function calculateTotalCommits(data) {
+async function calculateTotalCommits(repos, username) {
   let totalCommits = 0;
-  data.forEach((repo) => { 
-    totalCommits += commitCount(repo.name)
-  });
+
+  for (const repo of repos) {
+    try {
+      const { data } = await octokit.rest.repos.listContributors({
+        owner: repo.owner.login,
+        repo: repo.name,
+        per_page: 100,
+      });
+
+      const contributor = data.find((entry) => entry.login === username);
+      if (contributor) {
+        totalCommits += contributor.contributions;
+      }
+    } catch (error) {
+      if (error.status !== 404) {
+        console.warn(`Skipping ${repo.full_name}: ${error.message}`);
+      }
+    }
+  }
 
   return totalCommits;
 }
 
-async function updateReadme(userData) {
-  const TEMPLATE_PATH = "./main.mustache";
-  await fs.readFile(TEMPLATE_PATH, (err, data) => {
-    if (err) {
-      throw err;
-    }
+async function fetchCTFTIME(teamId) {
+  const response = await fetch(`https://ctftime.org/api/v1/teams/${teamId}/`);
+  if (!response.ok) {
+    throw new Error(`CTFtime API error: ${response.status}`);
+  }
 
-    const output = Mustache.render(data.toString(), userData);
-    fs.writeFileSync("README.md", output);
-  });
+  const team = await response.json();
+  const latestRatedYear = Object.keys(team.rating)
+    .filter((year) => team.rating[year].rating_place != null)
+    .map(Number)
+    .sort((a, b) => b - a)[0];
+
+  if (!latestRatedYear) {
+    const latestCountryYear = Object.keys(team.rating)
+      .filter((year) => team.rating[year].country_place != null)
+      .map(Number)
+      .sort((a, b) => b - a)[0];
+
+    return {
+      ratingPlace: "N/A",
+      countryPlace: latestCountryYear
+        ? String(team.rating[latestCountryYear].country_place)
+        : "N/A",
+    };
+  }
+
+  return {
+    ratingPlace: String(team.rating[latestRatedYear].rating_place),
+    countryPlace: String(team.rating[latestRatedYear].country_place),
+  };
 }
 
-async function scrapeCTFTIME(url) {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto(url);
-
-  const [el] = await page.$x('//*[@id="rating_2022"]/p[1]/b[1]');
-  const src = await el.getProperty('textContent');
-  const ratingPlace = (await src.jsonValue()).trim();
-
-  const [el2] = await page.$x('//*[@id="rating_2022"]/p[2]/b/a');
-  const src2 = await el2.getProperty('textContent');
-  const countryPlace = await src2.jsonValue();
-
-  browser.close();
-  return [ratingPlace, countryPlace]
+async function updateReadme(userData) {
+  const template = await fs.readFile("./main.mustache", "utf8");
+  const output = Mustache.render(template, userData);
+  await fs.writeFile("README.md", output);
 }
 
 async function main() {
-  const repoData = await grabDataFromAllRepositories();
+  if (!process.env.GH_ACCESS_TOKEN) {
+    throw new Error("GH_ACCESS_TOKEN is required");
+  }
 
-  const totalStars = calculateTotalStars(repoData);
+  const { data: user } = await octokit.rest.users.getAuthenticated();
+  const repos = await grabDataFromAllRepositories();
+  const totalStars = calculateTotalStars(repos);
+  const totalCommits = await calculateTotalCommits(repos, user.login);
+  const { ratingPlace, countryPlace } = await fetchCTFTIME(CTF_TEAM_ID);
 
-  const totalCommits = await calculateTotalCommits(
-    repoData
-  );
-
-  const [ratingPlace, countryPlace] = await scrapeCTFTIME("https://ctftime.org/team/170324");
-
-  // Hex color codes for the color blocks
-  const colors = ["200c0e", "513308", "9b7c15", "f9d2ba", "fbf4ec"];
-  await updateReadme({ totalStars, totalCommits, ratingPlace, countryPlace, colors });
+  await updateReadme({
+    totalStars,
+    totalCommits,
+    ratingPlace,
+    countryPlace,
+    colors: COLORS,
+  });
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

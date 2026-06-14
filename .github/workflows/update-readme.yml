@@ -4,39 +4,46 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - README.md
   schedule:
     - cron: '0 7-23/2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Checkout project source code
-      - uses: actions/checkout@v2
-
-      - name: Use NodeJs 18.1
-        uses: actions/setup-node@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          node-version: "18.1"
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - name: Cache npm dependencies
-        uses: actions/cache@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: "20"
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate updated README file
         run: npm start
         env:
           GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
-      - name: Commit and Push new README.md to the repository
-        uses: mikeal/publish-to-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH_NAME: 'main'
+      - name: Commit and push README
+        run: |
+          git config user.name "sescer"
+          git config user.email "b.patrushev@g.nsu.ru"
+          git add README.md
+          if git diff --staged --quiet; then
+            echo "No README changes to commit"
+            exit 0
+          fi
+          git commit -m "Automated publish: $(date -u '+%a %b %d %H:%M:%S UTC %Y') $(git rev-parse HEAD)"
+          git push
