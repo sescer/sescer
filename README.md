@@ -63,8 +63,8 @@
   |          🏳	CTF INFO              |
   =====================================
   CTF_Team: smiley-from-telega and Nyanya catgirls uwu
-  Overall_rating_place: 534
-  Rating_place_in_Russia: 33
+  Overall_rating_place: 282
+  Rating_place_in_Russia: 23
   CTFs: YetiCTF 22 - I place,
         VKA CTF 22 - I place,
         POLYGON CTF 2021 - II place,
@@ -74,8 +74,8 @@
   =====================================
   |          🐱 GitHub Stats          |
   =====================================
-  Commits: 59
-  Stars: 48
+  Commits: 511
+  Stars: 53
   ```
 
 </div>
